@@ -40,6 +40,12 @@ WEBHOOK_SECRET = env("WEBHOOK_SECRET")
 
 # Optional - for commit links in deploy alerts
 GITHUB_REPO_URL = env("GITHUB_REPO_URL", default="")
+
+# Optional - Full stack trace configuration
+# When enabled, sends complete stack traces instead of truncated versions
+SLACK_FULL_TRACEBACK_ENABLED = True  # Enable full traceback feature (default: False)
+SLACK_FULL_TRACEBACK_IN_THREAD = True  # Send full traceback in thread (default: True)
+SLACK_FULL_TRACEBACK_AS_FILE = False  # Upload as file attachment (default: False)
 ```
 
 ### Error Logging Handler
@@ -65,6 +71,37 @@ LOGGING = {
     },
 }
 ```
+
+### Full Stack Trace Configuration
+
+By default, stack traces are truncated to 2000 characters in the main error message. You can configure the handler to send full, untruncated stack traces in a thread reply:
+
+```python
+# settings.py
+
+# Enable full traceback feature
+SLACK_FULL_TRACEBACK_ENABLED = True
+
+# Send full traceback as a thread reply (default: True when enabled)
+SLACK_FULL_TRACEBACK_IN_THREAD = True
+
+# Upload traceback as a file attachment instead of a message (default: False)
+SLACK_FULL_TRACEBACK_AS_FILE = False
+```
+
+**Configuration Options:**
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `SLACK_FULL_TRACEBACK_ENABLED` | `False` | Enable the full traceback feature |
+| `SLACK_FULL_TRACEBACK_IN_THREAD` | `True` | Post full traceback as a thread reply instead of in the main message |
+| `SLACK_FULL_TRACEBACK_AS_FILE` | `False` | Upload traceback as a `.txt` file attachment (useful for very long traces) |
+
+**Behavior:**
+
+- **Disabled (default):** Stack traces are truncated to 2000 characters in the main error message
+- **Enabled + In Thread:** Main message contains error summary with a note; full traceback posted as thread reply
+- **Enabled + As File:** Full traceback uploaded as a text file attachment in the thread (ideal for very long traces)
 
 ### Webhook URL
 

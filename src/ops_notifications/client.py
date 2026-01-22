@@ -116,6 +116,51 @@ class SlackClient:
         """Send a report to the reports channel."""
         return self._send_message(self.reports_channel, text=text, blocks=blocks)
 
+    def upload_file(  # noqa: PLR0913
+        self,
+        content: str,
+        filename: str,
+        title: str | None = None,
+        channel: str | None = None,
+        thread_ts: str | None = None,
+        initial_comment: str | None = None,
+    ) -> dict[str, Any] | None:
+        """Upload a file to Slack.
+
+        Args:
+            content: The text content of the file.
+            filename: Name of the file (e.g., 'traceback.txt').
+            title: Optional title for the file.
+            channel: Channel to upload to. Defaults to alerts channel.
+            thread_ts: Optional thread timestamp to post as a reply.
+            initial_comment: Optional comment to add with the file.
+
+        Returns:
+            The Slack API response or None if failed.
+        """
+        from django.conf import settings  # noqa: PLC0415
+
+        slack_enabled = getattr(settings, "SLACK_ENABLED", False)
+        if not slack_enabled or not self.client:
+            logger.debug("Slack disabled, skipping file upload: %s", filename)
+            return None
+
+        target_channel = channel or self.alerts_channel
+
+        try:
+            response = self.client.files_upload_v2(
+                channel=target_channel,
+                content=content,
+                filename=filename,
+                title=title or filename,
+                thread_ts=thread_ts,
+                initial_comment=initial_comment,
+            )
+            return response.data if response else None
+        except Exception:
+            logger.exception("Failed to upload file %s to Slack channel %s", filename, target_channel)
+            return None
+
     @staticmethod
     def format_header(text: str) -> dict[str, Any]:
         """Format a header block."""

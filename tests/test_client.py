@@ -103,3 +103,82 @@ class TestSlackClientFormatters:
                 {"type": "mrkdwn", "text": "Element 2"},
             ],
         }
+
+
+class TestSlackClientFileUpload:
+    """Tests for SlackClient file upload functionality."""
+
+    def test_upload_file_returns_none_when_disabled(self, settings):
+        """upload_file should return None when Slack is disabled."""
+        settings.SLACK_ENABLED = False
+        client = SlackClient()
+        result = client.upload_file(content="test content", filename="test.txt")
+        assert result is None
+
+    def test_upload_file_calls_slack_api(self, settings):
+        """upload_file should call Slack files_upload_v2 API."""
+        settings.SLACK_ENABLED = True
+        settings.SLACK_BOT_TOKEN = "test-token"
+        settings.SLACK_ALERTS_CHANNEL = "alerts"
+
+        client = SlackClient()
+        mock_slack_client = MagicMock()
+        mock_slack_client.files_upload_v2.return_value = MagicMock(data={"ok": True, "file": {"id": "F123"}})
+
+        with patch.object(client, "_client", mock_slack_client):
+            with patch.object(client, "_initialized", True):
+                with patch.object(client, "_enabled", True):
+                    with patch.object(client, "_alerts_channel", "alerts"):
+                        client.upload_file(
+                            content="traceback content",
+                            filename="traceback.txt",
+                            title="Error Traceback",
+                            thread_ts="1234.5678",
+                            initial_comment="Full trace attached",
+                        )
+
+        mock_slack_client.files_upload_v2.assert_called_once_with(
+            channel="alerts",
+            content="traceback content",
+            filename="traceback.txt",
+            title="Error Traceback",
+            thread_ts="1234.5678",
+            initial_comment="Full trace attached",
+        )
+
+    def test_upload_file_uses_alerts_channel_by_default(self, settings):
+        """upload_file should use alerts channel when no channel specified."""
+        settings.SLACK_ENABLED = True
+        settings.SLACK_BOT_TOKEN = "test-token"
+        settings.SLACK_ALERTS_CHANNEL = "default-alerts"
+
+        client = SlackClient()
+        mock_slack_client = MagicMock()
+        mock_slack_client.files_upload_v2.return_value = MagicMock(data={"ok": True})
+
+        with patch.object(client, "_client", mock_slack_client):
+            with patch.object(client, "_initialized", True):
+                with patch.object(client, "_enabled", True):
+                    with patch.object(client, "_alerts_channel", "default-alerts"):
+                        client.upload_file(content="test", filename="test.txt")
+
+        call_kwargs = mock_slack_client.files_upload_v2.call_args.kwargs
+        assert call_kwargs["channel"] == "default-alerts"
+
+    def test_upload_file_uses_custom_channel(self, settings):
+        """upload_file should use specified channel when provided."""
+        settings.SLACK_ENABLED = True
+        settings.SLACK_BOT_TOKEN = "test-token"
+        settings.SLACK_ALERTS_CHANNEL = "default-alerts"
+
+        client = SlackClient()
+        mock_slack_client = MagicMock()
+        mock_slack_client.files_upload_v2.return_value = MagicMock(data={"ok": True})
+
+        with patch.object(client, "_client", mock_slack_client):
+            with patch.object(client, "_initialized", True):
+                with patch.object(client, "_enabled", True):
+                    client.upload_file(content="test", filename="test.txt", channel="custom-channel")
+
+        call_kwargs = mock_slack_client.files_upload_v2.call_args.kwargs
+        assert call_kwargs["channel"] == "custom-channel"
