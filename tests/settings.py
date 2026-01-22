@@ -26,6 +26,11 @@ WEBHOOK_SECRET = "test-webhook-secret"
 GITHUB_REPO_URL = "https://github.com/test/repo"
 SITE_URL = "https://test.example.com"
 
+# Full traceback configuration (disabled by default for backward compatibility)
+SLACK_FULL_TRACEBACK_ENABLED = False
+SLACK_FULL_TRACEBACK_IN_THREAD = True
+SLACK_FULL_TRACEBACK_AS_FILE = False
+
 # Cache settings
 CACHES = {
     "default": {
